@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Modelos de Usuarios y Autenticación
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  role      String   @default("USER") // ADMIN, USER
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Categorías de Productos
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  products    Product[]
+}
+
+// Unidades de Medida
+model Unit {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  symbol      String
+  description String?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  products    Product[]
+}
+
+// Proveedores
+model Supplier {
+  id          String      @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  inboundReceipts InboundReceipt[]
+}
+
+// Clientes
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+}
+
+// Productos
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  sku         String      @unique
+  price       Float
+  stock       Int         @default(0)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  unitId      String
+  unit        Unit        @relation(fields: [unitId], references: [id])
+  imageUrl    String?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  inboundItems InboundItem[]
+  saleItems    SaleItem[]
+}
+
+// Operaciones (Ingresos y Ventas)
+model Operation {
+  id          String        @id @default(cuid())
+  type        String        // 'INBOUND' o 'OUTBOUND'
+  reference   String        @unique // Número de documento
+  date        DateTime      @default(now())
+  total       Float
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  inboundReceipt InboundReceipt?
+  sale           Sale?
+}
+
+// Ingreso de Productos
+model InboundReceipt {
+  id           String      @id @default(cuid())
+  operationId  String      @unique
+  operation    Operation   @relation(fields: [operationId], references: [id])
+  supplierId   String
+  supplier     Supplier    @relation(fields: [supplierId], references: [id])
+  items        InboundItem[]
+}
+
+// Items de Ingreso
+model InboundItem {
+  id              String         @id @default(cuid())
+  inboundReceiptId String
+  inboundReceipt  InboundReceipt @relation(fields: [inboundReceiptId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product        @relation(fields: [productId], references: [id])
+  quantity        Int
+  unitPrice       Float
+  subtotal        Float
+}
+
+// Ventas
+model Sale {
+  id           String      @id @default(cuid())
+  operationId  String      @unique
+  operation    Operation   @relation(fields: [operationId], references: [id])
+  customerId   String
+  customer     Customer    @relation(fields: [customerId], references: [id])
+  items        SaleItem[]
+}
+
+// Items de Venta
+model SaleItem {
+  id       String  @id @default(cuid())
+  saleId   String
+  sale     Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product  Product @relation(fields: [productId], references: [id])
+  quantity Int
+  unitPrice Float
+  subtotal Float
+}
