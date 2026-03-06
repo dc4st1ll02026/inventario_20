@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  outputFileTracingIncludes: {
+     '/api/**/*': ['./node_modules/.prisma/client/**/*'],
+     '/*': ['./node_modules/.prisma/client/**/*'],
+   },
 };
 
 export default nextConfig;
